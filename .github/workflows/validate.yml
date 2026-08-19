@@ -1,0 +1,41 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pytest pytest-asyncio aiohttp
+
+      - name: Lint with ruff
+        run: ruff check custom_components/
+
+      - name: Run tests
+        run: python -m pytest tests/ -v
+
+      - name: Validate manifest
+        run: |
+          python -c "
+          import json
+          with open('custom_components/immich_random/manifest.json') as f:
+              m = json.load(f)
+          assert m['domain'] == 'immich_random', 'domain mismatch'
+          assert m['config_flow'] is True, 'config_flow must be true'
+          assert m['version'], 'version required'
+          print('Manifest OK')
+          "

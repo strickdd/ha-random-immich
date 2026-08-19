@@ -1,9 +1,10 @@
 # Immich Random Image for Home Assistant
 
 ![GitHub Release](https://img.shields.io/github/v/release/strickdd/ha-random-immich)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/strickdd/ha-random-immich/validate.yml)
 ![License](https://img.shields.io/github/license/strickdd/ha-random-immich)
 
-A custom integration for Home Assistant that displays random images from your [Immich](https://immich.app) instance on your dashboards. Built for Immich v3+ — the old `immich-home-assistant` integration broke when Immich changed their API in v3, so this is a fresh implementation using the current `/api/search/random` endpoint.
+I got tired of old add-ons that would break when Immich updated their APIs, so I created a custom integration for Home Assistant that displays random images from your Immich instance on your dashboards. Built for Immich v3+ using the current `/api/search/random` endpoint.
 
 ## Features
 
@@ -31,6 +32,30 @@ Install via [HACS](https://hacs.xyz) (Home Assistant Community Store).
 
 Copy the entire `custom_components/immich_random/` directory into your Home Assistant `custom_components/` directory, then restart Home Assistant.
 
+## Immich API Key Setup
+
+To use this integration, you need a long-lived API key from Immich:
+
+1. Open your Immich web UI
+2. Go to **Settings → API Keys** (or **Account Settings → API Keys**)
+3. Click **Create new API key**
+4. Give it a name (e.g. "Home Assistant")
+5. Copy the generated key
+
+### Required permissions
+
+The API key needs the following Immich permissions:
+
+| Permission | Why |
+|---|---|
+| `album.read` | List albums for the album picker (optional — only needed if selecting specific albums) |
+| `asset.read` | Download image originals |
+| `search.read` | Use the `/api/search/random` endpoint |
+
+You do **not** need `user.read` or any admin-level permissions. The integration authenticates via `/api/auth/validateToken`, which requires no special permissions.
+
+If your key is missing a permission, Immich returns `403 Missing required permission: <permission>`. Add the missing permission to the key in Immich settings and try again.
+
 ## Configuration
 
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=immich_random)
@@ -38,7 +63,6 @@ Copy the entire `custom_components/immich_random/` directory into your Home Assi
 1. Click the button above, or go to **Settings → Devices & Services → Add Integration**
 2. Search for "Immich Random Image"
 3. Enter your Immich server URL and API key
-   - Generate an API key in Immich under **Settings → API Keys**
    - Toggle SSL verification off if your self-hosted instance uses self-signed certificates
 4. After setup, click **Configure** on the integration to select which albums to pull from
    - Leave all albums unchecked for a fully random image from your entire library
@@ -75,7 +99,20 @@ The integration uses Immich's `/api/search/random` endpoint (introduced in Immic
 
 - Home Assistant 2024.1+ (tested on 2026.8.0)
 - Immich v3+ running and accessible from your Home Assistant instance
-- A long-lived Immich API key
+- A long-lived Immich API key with `asset.read` and `search.read` permissions
+
+## Development
+
+```bash
+# Install dev dependencies
+pip install -r requirements-dev.txt
+
+# Run tests
+python -m pytest tests/ -v
+
+# Run linting
+ruff check custom_components/
+```
 
 ## License
 

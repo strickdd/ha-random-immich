@@ -1,8 +1,8 @@
 """Image platform for the Immich Random Image integration."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
 import logging
+from datetime import datetime, timedelta
 
 from homeassistant.components.image import ImageEntity
 from homeassistant.config_entries import ConfigEntry
@@ -10,7 +10,6 @@ from homeassistant.const import CONF_API_KEY, CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
 from .hub import ImmichRandomHub
 
 SCAN_INTERVAL = timedelta(minutes=5)

@@ -6,7 +6,6 @@ from typing import Any
 from urllib.parse import urlparse
 
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.const import CONF_API_KEY, CONF_HOST
 from homeassistant.core import callback
@@ -14,7 +13,7 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv
 
 from .const import CONF_ALBUM_IDS, CONF_VERIFY_SSL, DOMAIN
-from .hub import ApiError, CannotConnect, ImmichRandomHub, InvalidAuth
+from .hub import CannotConnect, ImmichRandomHub, InvalidAuth
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,12 +42,10 @@ async def validate_input(hass, data: dict[str, Any]) -> dict[str, Any]:
     if not await hub.authenticate():
         raise InvalidAuth
 
-    user_info = await hub.get_my_user_info()
-    username = user_info.get("name", "Unknown")
     hostname = urlparse(url).hostname
 
     return {
-        "title": f"{username} @ {hostname}",
+        "title": f"Immich @ {hostname}",
         "data": {
             CONF_HOST: url,
             CONF_API_KEY: api_key,

@@ -6,7 +6,6 @@ import ssl
 from urllib.parse import urljoin
 
 import aiohttp
-
 from homeassistant.exceptions import HomeAssistantError
 
 _LOGGER = logging.getLogger(__name__)
@@ -47,31 +46,23 @@ class ImmichRandomHub:
         return aiohttp.ClientSession(connector=connector)
 
     async def authenticate(self) -> bool:
-        """Test if we can authenticate with the host."""
+        """Test if we can authenticate with the host.
+
+        Uses /api/auth/validateToken which requires no special permissions,
+        making it compatible with API keys that have limited scopes.
+        """
         try:
             async with self._session() as session:
-                url = urljoin(self.host, "/api/users/me")
+                url = urljoin(self.host, "/api/auth/validateToken")
                 headers = {"Accept": "application/json", _HEADER_API_KEY: self.api_key}
-                async with session.get(url=url, headers=headers) as response:
+                async with session.post(url=url, headers=headers) as response:
                     if response.status != 200:
                         _LOGGER.error("Auth failed: status=%d", response.status)
                         return False
-                    return True
+                    result = await response.json()
+                    return result.get("authStatus", False)
         except aiohttp.ClientError as exception:
             _LOGGER.error("Error connecting to the API: %s", exception)
-            raise CannotConnect from exception
-
-    async def get_my_user_info(self) -> dict:
-        """Get user info for the config entry title."""
-        try:
-            async with self._session() as session:
-                url = urljoin(self.host, "/api/users/me")
-                headers = {"Accept": "application/json", _HEADER_API_KEY: self.api_key}
-                async with session.get(url=url, headers=headers) as response:
-                    if response.status != 200:
-                        raise ApiError()
-                    return await response.json()
-        except aiohttp.ClientError as exception:
             raise CannotConnect from exception
 
     async def list_all_albums(self) -> list[dict]:
