@@ -6,14 +6,22 @@ from datetime import datetime, timedelta
 
 from homeassistant.components.image import ImageEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_API_KEY, CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 from .hub import ImmichRandomHub
 
-SCAN_INTERVAL = timedelta(minutes=5)
 _LOGGER = logging.getLogger(__name__)
+
+
+def _get_scan_interval(config_entry: ConfigEntry) -> timedelta:
+    """Get the scan interval from config entry options."""
+    seconds = config_entry.options.get(
+        "scan_interval",
+        config_entry.data.get("scan_interval", DEFAULT_SCAN_INTERVAL),
+    )
+    return timedelta(seconds=int(seconds))
 
 
 async def async_setup_entry(
@@ -22,16 +30,16 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Immich Random image platform."""
-    hub = ImmichRandomHub(
-        host=config_entry.data[CONF_HOST],
-        api_key=config_entry.data[CONF_API_KEY],
-        album_ids=config_entry.options.get(
-            "album_ids", config_entry.data.get("album_ids", [])
-        ),
-        verify_ssl=config_entry.options.get(
-            "verify_ssl", config_entry.data.get("verify_ssl", True)
-        ),
+    entry_data = hass.data[DOMAIN][config_entry.entry_id]
+    hub: ImmichRandomHub = entry_data["hub"]
+
+    _LOGGER.info(
+        "Setting up Immich Random Image entity (host=%s, albums=%d, verify_ssl=%s)",
+        hub.host,
+        len(hub.album_ids),
+        hub.verify_ssl,
     )
+
     async_add_entities([ImmichRandomImageEntity(hass, hub, config_entry)])
 
 
@@ -62,7 +70,9 @@ class ImmichRandomImageEntity(ImageEntity):
                 self._attr_unique_id = f"immich_random_album_{album_ids[0]}"
                 self._attr_name = "Immich Random Album Image"
             else:
-                self._attr_unique_id = f"immich_random_albums_{'_'.join(album_ids[:3])}"
+                self._attr_unique_id = (
+                    f"immich_random_albums_{'_'.join(album_ids[:3])}"
+                )
                 self._attr_name = "Immich Random Multi-Album Image"
         else:
             self._attr_unique_id = "immich_random"
@@ -70,20 +80,34 @@ class ImmichRandomImageEntity(ImageEntity):
         self._current_image: bytes | None = None
         self._attr_extra_state_attributes = {}
 
+    @property
+    def scan_interval(self) -> timedelta:
+        """Return the scan interval for this entity."""
+        return _get_scan_interval(self._config_entry)
+
     async def async_update(self) -> None:
         """Fetch a new random image."""
+        _LOGGER.debug("Fetching new random image from %s", self._hub.host)
+
         asset = await self._hub.get_random_image()
         if not asset:
-            _LOGGER.warning("No random image returned")
+            _LOGGER.warning("No random image returned from Immich")
             return
 
         asset_id = asset.get("id")
         if not asset_id:
+            _LOGGER.warning("Random image returned without an asset ID")
             return
+
+        _LOGGER.debug(
+            "Got random image: id=%s, file=%s",
+            asset_id,
+            asset.get("originalFileName", "?"),
+        )
 
         image_bytes = await self._hub.download_asset(asset_id)
         if not image_bytes:
-            _LOGGER.warning("Failed to download image %s", asset_id)
+            _LOGGER.warning("Failed to download image %s from Immich", asset_id)
             return
 
         self._current_image = image_bytes
@@ -97,8 +121,17 @@ class ImmichRandomImageEntity(ImageEntity):
         self._attr_extra_state_attributes["media_width"] = asset.get("width", "")
         self._attr_extra_state_attributes["media_height"] = asset.get("height", "")
 
+        _LOGGER.info(
+            "Updated Immich random image: %s (%sx%s, %s)",
+            asset.get("originalFileName", "?"),
+            asset.get("width", "?"),
+            asset.get("height", "?"),
+            asset.get("localDateTime", "?"),
+        )
+
     async def async_image(self) -> bytes | None:
         """Return the current image bytes."""
         if not self._current_image:
+            _LOGGER.debug("No cached image, triggering async_update")
             await self.async_update()
         return self._current_image

@@ -27,7 +27,8 @@
         "description": "Select which albums to pull random images from. Leave all unchecked for a fully random image from your entire library.",
         "data": {
           "album_ids": "Albums",
-          "verify_ssl": "Verify SSL certificate"
+          "verify_ssl": "Verify SSL certificate",
+          "scan_interval": "Refresh interval (seconds, 60-300 recommended)"
         }
       }
     }

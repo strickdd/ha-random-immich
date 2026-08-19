@@ -12,7 +12,12 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv
 
-from .const import CONF_ALBUM_IDS, CONF_VERIFY_SSL, DOMAIN
+from .const import (
+    CONF_ALBUM_IDS,
+    CONF_VERIFY_SSL,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+)
 from .hub import CannotConnect, ImmichRandomHub, InvalidAuth
 
 _LOGGER = logging.getLogger(__name__)
@@ -139,6 +144,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     self.config_entry.data.get(CONF_VERIFY_SSL, True),
                 ),
             ): bool,
+            vol.Optional(
+                "scan_interval",
+                default=self.config_entry.options.get(
+                    "scan_interval", DEFAULT_SCAN_INTERVAL
+                ),
+            ): vol.All(vol.Coerce(int), vol.Range(min=1, max=86400)),
         }
 
         if album_map:

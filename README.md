@@ -13,7 +13,7 @@ I got tired of old add-ons that would break when Immich updated their APIs, so I
 - **Random image from multiple albums** — select multiple albums; the integration picks randomly across all of them
 - **SSL toggle** — disable SSL verification for self-hosted instances without valid certificates
 - **URL normalization** — handles `localhost`, `127.0.0.1`, private IPs, bare hostnames, and full domain names
-- **Configurable refresh interval** — new image every 5 minutes by default
+- **Configurable refresh interval** — new image every 5 minutes by default; adjustable from 1 second to 24 hours (60-300 seconds recommended)
 - **Metadata attributes** — filename, dimensions, and capture date exposed as state attributes
 - **No external dependencies** — uses only `aiohttp` (bundled with Home Assistant)
 
