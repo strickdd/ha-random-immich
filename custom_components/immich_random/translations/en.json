@@ -23,12 +23,14 @@
   "options": {
     "step": {
       "init": {
-        "title": "Immich Random Image Options",
-        "description": "Select which albums to pull random images from. Leave all unchecked for a fully random image from your entire library.",
+        "title": "Immich Random Image Settings",
+        "description": "Update your Immich connection settings and select which albums to pull random images from. Leave all albums unchecked for a fully random image from your entire library. A new image is pulled immediately when albums change.",
         "data": {
-          "album_ids": "Albums",
+          "host": "Server URL",
+          "api_key": "API Key",
           "verify_ssl": "Verify SSL certificate",
-          "scan_interval": "Refresh interval (seconds, 60-300 recommended)"
+          "scan_interval": "Refresh interval (seconds, 60-300 recommended)",
+          "album_ids": "Albums"
         }
       }
     }

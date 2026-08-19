@@ -106,45 +106,124 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    """Options flow for selecting albums and adjusting settings."""
+    """Options flow for editing connection settings and selecting albums."""
+
+    def __init__(self) -> None:
+        """Initialize options."""
+        self._albums_changed = False
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Manage the options."""
+        """Manage the options: host, API key, SSL, albums, scan interval."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            # Validate the connection with the new settings
+            try:
+                url = _normalize_host(user_input[CONF_HOST])
+                hub = ImmichRandomHub(
+                    host=url,
+                    api_key=user_input[CONF_API_KEY],
+                    verify_ssl=user_input.get(CONF_VERIFY_SSL, True),
+                )
+                if not await hub.authenticate():
+                    _LOGGER.warning("Options flow: authentication failed")
+                    return self.async_show_form(
+                        step_id="init",
+                        errors={"base": "invalid_auth"},
+                        data_schema=self._build_schema(
+                            await self._get_albums(
+                                user_input[CONF_API_KEY],
+                                url,
+                                user_input.get(CONF_VERIFY_SSL, True),
+                            ),
+                            user_input,
+                        ),
+                    )
+            except CannotConnect:
+                return self.async_show_form(
+                    step_id="init",
+                    errors={"base": "cannot_connect"},
+                    data_schema=self._build_schema(
+                        [],
+                        user_input,
+                    ),
+                )
 
-        hub = ImmichRandomHub(
-            host=self.config_entry.data[CONF_HOST],
-            api_key=self.config_entry.data[CONF_API_KEY],
-            verify_ssl=self.config_entry.options.get(
-                CONF_VERIFY_SSL, self.config_entry.data.get(CONF_VERIFY_SSL, True)
-            ),
+            # Normalize the host
+            user_input[CONF_HOST] = url
+
+            # Check if album selection changed
+            old_albums = set(self.config_entry.options.get(
+                CONF_ALBUM_IDS, self.config_entry.data.get(CONF_ALBUM_IDS, [])
+            ))
+            new_albums = set(user_input.get(CONF_ALBUM_IDS, []))
+            self._albums_changed = old_albums != new_albums
+
+            # Update data fields (host, API key) and options
+            new_data = dict(self.config_entry.data)
+            new_data[CONF_HOST] = user_input[CONF_HOST]
+            new_data[CONF_API_KEY] = user_input[CONF_API_KEY]
+            new_data[CONF_VERIFY_SSL] = user_input.get(CONF_VERIFY_SSL, True)
+
+            # Build options dict (everything except host and API key)
+            options = {
+                CONF_VERIFY_SSL: user_input.get(CONF_VERIFY_SSL, True),
+                "scan_interval": user_input.get("scan_interval", DEFAULT_SCAN_INTERVAL),
+                CONF_ALBUM_IDS: user_input.get(CONF_ALBUM_IDS, []),
+            }
+
+            # Update the config entry data (host, API key, verify_ssl)
+            self.hass.config_entries.async_update_entry(
+                self.config_entry,
+                data=new_data,
+                options=options,
+            )
+
+            # If albums changed, force a refresh
+            if self._albums_changed:
+                _LOGGER.info("Album selection changed, forcing image refresh")
+                # Trigger entity update via the hub
+                entry_data = self.hass.data.get(DOMAIN, {}).get(
+                    self.config_entry.entry_id
+                )
+                if entry_data and "hub" in entry_data:
+                    hub = entry_data["hub"]
+                    # Update the hub's album_ids so the next poll uses the new albums
+                    hub.album_ids = options[CONF_ALBUM_IDS]
+                    hub.verify_ssl = options[CONF_VERIFY_SSL]
+
+            return self.async_create_entry(title="", data=options)
+
+        # Build the form with current values
+        host = self.config_entry.data.get(CONF_HOST, "")
+        api_key = self.config_entry.data.get(CONF_API_KEY, "")
+        verify_ssl = self.config_entry.options.get(
+            CONF_VERIFY_SSL, self.config_entry.data.get(CONF_VERIFY_SSL, True)
         )
-
-        albums = await hub.list_all_albums()
-        album_map = {album["id"]: album["albumName"] for album in albums}
-
+        scan_interval = self.config_entry.options.get(
+            "scan_interval", DEFAULT_SCAN_INTERVAL
+        )
         current_albums = self.config_entry.options.get(
             CONF_ALBUM_IDS, self.config_entry.data.get(CONF_ALBUM_IDS, [])
         )
-        # Filter out any album IDs that no longer exist
+
+        # Fetch albums for the picker
+        try:
+            albums = await self._get_albums(api_key, host, verify_ssl)
+        except Exception:
+            _LOGGER.warning("Failed to fetch albums for options flow")
+            albums = []
+
+        album_map = {album["id"]: album["albumName"] for album in albums}
         current_albums = [a for a in current_albums if a in album_map]
 
         schema_dict: dict = {
-            vol.Optional(
-                CONF_VERIFY_SSL,
-                default=self.config_entry.options.get(
-                    CONF_VERIFY_SSL,
-                    self.config_entry.data.get(CONF_VERIFY_SSL, True),
-                ),
-            ): bool,
+            vol.Required(CONF_HOST, default=host): str,
+            vol.Required(CONF_API_KEY, default=api_key): str,
+            vol.Optional(CONF_VERIFY_SSL, default=verify_ssl): bool,
             vol.Optional(
                 "scan_interval",
-                default=self.config_entry.options.get(
-                    "scan_interval", DEFAULT_SCAN_INTERVAL
-                ),
+                default=scan_interval,
             ): vol.All(vol.Coerce(int), vol.Range(min=1, max=86400)),
         }
 
@@ -157,3 +236,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             step_id="init",
             data_schema=vol.Schema(schema_dict),
         )
+
+    async def _get_albums(
+        self, api_key: str, host: str, verify_ssl: bool
+    ) -> list[dict]:
+        """Fetch the list of albums from Immich."""
+        url = _normalize_host(host)
+        hub = ImmichRandomHub(host=url, api_key=api_key, verify_ssl=verify_ssl)
+        return await hub.list_all_albums()
