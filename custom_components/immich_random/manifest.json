@@ -1,0 +1,15 @@
+{
+  "domain": "immich_random",
+  "name": "Immich Random Image",
+  "codeowners": ["@strickdd"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/strickdd/ha-random-immich",
+  "homekit": {},
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/strickdd/ha-random-immich/issues",
+  "requirements": [],
+  "ssdp": [],
+  "version": "1.0.0",
+  "zeroconf": []
+}
