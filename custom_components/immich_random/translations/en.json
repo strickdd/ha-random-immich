@@ -5,7 +5,7 @@
         "title": "Connect to Immich",
         "description": "Enter your Immich server URL and API key. You can generate a long-lived API key in Immich under Settings > API Keys.",
         "data": {
-          "host": "Server URL (e.g. https://pics.example.com or http://localhost)",
+          "host": "Server URL",
           "api_key": "API Key",
           "verify_ssl": "Verify SSL certificate"
         }
