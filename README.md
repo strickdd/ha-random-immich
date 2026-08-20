@@ -1,10 +1,10 @@
 # Immich Random Image for Home Assistant
 
-![GitHub Release](https://img.shields.io/github/v/release/strickdd/ha-random-immich?label=release)
-![CI Status](https://img.shields.io/github/actions/workflow/status/strickdd/ha-random-immich/validate.yml?label=CI)
-![License](https://img.shields.io/github/license/strickdd/ha-random-immich?label=license)
+![GitHub Release](https://img.shields.io/github/v/release/strickdd/ImmichRandomImage?label=release)
+![CI Status](https://img.shields.io/github/actions/workflow/status/strickdd/ImmichRandomImage/validate.yml?label=CI)
+![License](https://img.shields.io/github/license/strickdd/ImmichRandomImage?label=license)
 
-I got tired of old add-ons that would break when Immich updated their APIs, so I created a custom integration for Home Assistant that displays random images from your Immich instance on your dashboards. Built for Immich v3+ using the current `/api/search/random` endpoint.
+I got tired of old Home Assistant add-ons that would break when Immich updated their APIs, so I created a custom integration for Home Assistant that displays random images from your Immich instance on your dashboards. Built for Immich v3+ using the current `/api/search/random` endpoint.
 
 ## Features
 
@@ -100,7 +100,7 @@ Install via [HACS](https://hacs.xyz) (Home Assistant Community Store).
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=ha-random-immich&category=Integration&owner=strickdd)
 
 1. Click the button above, or open HACS → Integrations → ⋮ → Custom repositories
-2. Add `https://github.com/strickdd/ha-random-immich` as an Integration repository
+2. Add `https://github.com/strickdd/ImmichRandomImage` as an Integration repository
 3. Install "Immich Random Image" from HACS
 4. Restart Home Assistant
 

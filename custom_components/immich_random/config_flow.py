@@ -131,9 +131,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             verify_ssl=self._credentials.get(CONF_VERIFY_SSL, True),
         )
         try:
+            _LOGGER.info("Fetching albums for config flow album selection step")
             albums = await hub.list_all_albums()
-        except Exception:
-            _LOGGER.warning("Failed to fetch albums during setup, skipping album step")
+            _LOGGER.info("Fetched %d albums from Immich", len(albums))
+        except Exception as err:
+            _LOGGER.warning("Failed to fetch albums during setup: %s — skipping album step", err)
             # Skip album selection and create the entry directly
             data = dict(self._credentials)
             data[CONF_ALBUM_IDS] = []

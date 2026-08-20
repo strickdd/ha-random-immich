@@ -71,12 +71,9 @@ class ImmichAlbumSelect(SelectEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
-        """Return album names as attributes."""
+        """Return album count as attributes (names excluded for size)."""
         return {
-            "album_names": {
-                album["id"]: album["albumName"]
-                for album in self._coordinator.albums
-            },
+            "album_count": len(self._coordinator.albums),
             "current_selection": self._coordinator.hub.album_ids,
         }
 

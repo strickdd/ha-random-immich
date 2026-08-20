@@ -1,0 +1,11 @@
+refresh:
+  name: Refresh
+  description: Manually trigger a new random image fetch from Immich.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: Optional. The config entry ID to refresh. If omitted, all Immich Random Image entries are refreshed.
+      example: "01M0E6XHB0J5E8M80BGZ3ZFYSF"
+      required: false
+      selector:
+        text:

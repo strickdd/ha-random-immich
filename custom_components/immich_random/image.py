@@ -108,4 +108,4 @@ class ImmichRandomImageEntity(ImageEntity):
                 return datetime.fromisoformat(last_pulled)
             except (ValueError, TypeError):
                 pass
-        return self._coordinator.data_last_update_success_time
+        return self._coordinator.last_update_success_time

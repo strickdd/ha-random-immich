@@ -4,12 +4,12 @@
   "codeowners": ["@strickdd"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/strickdd/ha-random-immich",
+  "documentation": "https://github.com/strickdd/ImmichRandomImage",
   "homekit": {},
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/strickdd/ha-random-immich/issues",
+  "issue_tracker": "https://github.com/strickdd/ImmichRandomImage/issues",
   "requirements": [],
   "ssdp": [],
-  "version": "1.1.0",
+  "version": "1.2.1",
   "zeroconf": []
 }
