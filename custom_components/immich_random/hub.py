@@ -7,6 +7,7 @@ from urllib.parse import urljoin
 
 import aiohttp
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class ImmichRandomHub:
         api_key: str,
         album_ids: list[str] | None = None,
         verify_ssl: bool = True,
+        hass=None,
     ) -> None:
         """Initialize."""
         self.host = host
@@ -39,9 +41,13 @@ class ImmichRandomHub:
         self.album_ids = album_ids or []
         self.verify_ssl = verify_ssl
         self._ssl_context = _create_ssl_context(verify_ssl)
+        self._hass = hass
 
-    def _session(self) -> aiohttp.ClientSession:
-        """Create an aiohttp session with the right SSL settings."""
+    def _get_session(self) -> aiohttp.ClientSession:
+        """Get an aiohttp session. Uses HA's managed session when available."""
+        if self._hass is not None:
+            return async_get_clientsession(self._hass, verify_ssl=self.verify_ssl)
+        # Fallback for when hass is not available (e.g. in tests)
         connector = aiohttp.TCPConnector(ssl=self._ssl_context)
         return aiohttp.ClientSession(connector=connector)
 
@@ -52,15 +58,15 @@ class ImmichRandomHub:
         making it compatible with API keys that have limited scopes.
         """
         try:
-            async with self._session() as session:
-                url = urljoin(self.host, "/api/auth/validateToken")
-                headers = {"Accept": "application/json", _HEADER_API_KEY: self.api_key}
-                async with session.post(url=url, headers=headers) as response:
-                    if response.status != 200:
-                        _LOGGER.error("Auth failed: status=%d", response.status)
-                        return False
-                    result = await response.json()
-                    return result.get("authStatus", False)
+            session = self._get_session()
+            url = urljoin(self.host, "/api/auth/validateToken")
+            headers = {"Accept": "application/json", _HEADER_API_KEY: self.api_key}
+            async with session.post(url=url, headers=headers) as response:
+                if response.status != 200:
+                    _LOGGER.error("Auth failed: status=%d", response.status)
+                    return False
+                result = await response.json()
+                return result.get("authStatus", False)
         except aiohttp.ClientError as exception:
             _LOGGER.error("Error connecting to the API: %s", exception)
             raise CannotConnect from exception
@@ -68,13 +74,13 @@ class ImmichRandomHub:
     async def list_all_albums(self) -> list[dict]:
         """List all albums."""
         try:
-            async with self._session() as session:
-                url = urljoin(self.host, "/api/albums")
-                headers = {"Accept": "application/json", _HEADER_API_KEY: self.api_key}
-                async with session.get(url=url, headers=headers) as response:
-                    if response.status != 200:
-                        raise ApiError()
-                    return await response.json()
+            session = self._get_session()
+            url = urljoin(self.host, "/api/albums")
+            headers = {"Accept": "application/json", _HEADER_API_KEY: self.api_key}
+            async with session.get(url=url, headers=headers) as response:
+                if response.status != 200:
+                    raise ApiError()
+                return await response.json()
         except aiohttp.ClientError as exception:
             raise CannotConnect from exception
 
@@ -85,32 +91,32 @@ class ImmichRandomHub:
         Otherwise it's a fully random image from the entire library.
         """
         try:
-            async with self._session() as session:
-                url = urljoin(self.host, "/api/search/random")
-                headers = {
-                    "Accept": "application/json",
-                    "Content-Type": "application/json",
-                    _HEADER_API_KEY: self.api_key,
-                }
-                payload: dict = {"size": 1, "type": "IMAGE"}
-                if self.album_ids:
-                    payload["albumIds"] = self.album_ids
+            session = self._get_session()
+            url = urljoin(self.host, "/api/search/random")
+            headers = {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                _HEADER_API_KEY: self.api_key,
+            }
+            payload: dict = {"size": 1, "type": "IMAGE"}
+            if self.album_ids:
+                payload["albumIds"] = self.album_ids
 
-                async with session.post(
-                    url=url, headers=headers, json=payload
-                ) as response:
-                    if response.status != 200:
-                        _LOGGER.error(
-                            "Random search failed: status=%d body=%s",
-                            response.status,
-                            await response.text(),
-                        )
-                        return None
-                    results = await response.json()
-                    if not results:
-                        _LOGGER.warning("No images returned from random search")
-                        return None
-                    return results[0]
+            async with session.post(
+                url=url, headers=headers, json=payload
+            ) as response:
+                if response.status != 200:
+                    _LOGGER.error(
+                        "Random search failed: status=%d body=%s",
+                        response.status,
+                        await response.text(),
+                    )
+                    return None
+                results = await response.json()
+                if not results:
+                    _LOGGER.warning("No images returned from random search")
+                    return None
+                return results[0]
         except aiohttp.ClientError as exception:
             _LOGGER.error("Error connecting to the API: %s", exception)
             raise CannotConnect from exception
@@ -118,16 +124,16 @@ class ImmichRandomHub:
     async def download_asset(self, asset_id: str) -> bytes | None:
         """Download the original image."""
         try:
-            async with self._session() as session:
-                url = urljoin(self.host, f"/api/assets/{asset_id}/original")
-                headers = {_HEADER_API_KEY: self.api_key}
-                async with session.get(url=url, headers=headers) as response:
-                    if response.status != 200:
-                        _LOGGER.error(
-                            "Download failed: status=%d", response.status
-                        )
-                        return None
-                    return await response.read()
+            session = self._get_session()
+            url = urljoin(self.host, f"/api/assets/{asset_id}/original")
+            headers = {_HEADER_API_KEY: self.api_key}
+            async with session.get(url=url, headers=headers) as response:
+                if response.status != 200:
+                    _LOGGER.error(
+                        "Download failed: status=%d", response.status
+                    )
+                    return None
+                return await response.read()
         except aiohttp.ClientError as exception:
             _LOGGER.error("Error connecting to the API: %s", exception)
             raise CannotConnect from exception
@@ -135,13 +141,13 @@ class ImmichRandomHub:
     async def get_asset_info(self, asset_id: str) -> dict | None:
         """Get asset metadata."""
         try:
-            async with self._session() as session:
-                url = urljoin(self.host, f"/api/assets/{asset_id}")
-                headers = {"Accept": "application/json", _HEADER_API_KEY: self.api_key}
-                async with session.get(url=url, headers=headers) as response:
-                    if response.status != 200:
-                        return None
-                    return await response.json()
+            session = self._get_session()
+            url = urljoin(self.host, f"/api/assets/{asset_id}")
+            headers = {"Accept": "application/json", _HEADER_API_KEY: self.api_key}
+            async with session.get(url=url, headers=headers) as response:
+                if response.status != 200:
+                    return None
+                return await response.json()
         except aiohttp.ClientError as exception:
             raise CannotConnect from exception
 

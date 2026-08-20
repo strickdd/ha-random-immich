@@ -17,6 +17,7 @@ def _setup_ha_stubs():
         "homeassistant.core",
         "homeassistant.exceptions",
         "homeassistant.helpers",
+        "homeassistant.helpers.aiohttp_client",
         "homeassistant.helpers.config_validation",
         "homeassistant.helpers.entity_platform",
         "homeassistant.helpers.selector",

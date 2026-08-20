@@ -48,7 +48,7 @@ async def validate_input(hass, data: dict[str, Any]) -> dict[str, Any]:
     api_key = data[CONF_API_KEY]
     verify_ssl = data.get(CONF_VERIFY_SSL, True)
 
-    hub = ImmichRandomHub(host=url, api_key=api_key, verify_ssl=verify_ssl)
+    hub = ImmichRandomHub(host=url, api_key=api_key, verify_ssl=verify_ssl, hass=hass)
     if not await hub.authenticate():
         raise InvalidAuth
 
@@ -129,6 +129,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             host=self._credentials[CONF_HOST],
             api_key=self._credentials[CONF_API_KEY],
             verify_ssl=self._credentials.get(CONF_VERIFY_SSL, True),
+            hass=self.hass,
         )
         try:
             _LOGGER.info("Fetching albums for config flow album selection step")
@@ -208,6 +209,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 host=url,
                 api_key=api_key,
                 verify_ssl=verify_ssl,
+                hass=self.hass,
             )
             if not await hub.authenticate():
                 _LOGGER.warning("Options flow: authentication failed")
@@ -344,5 +346,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     ) -> list[dict]:
         """Fetch the list of albums from Immich."""
         url = _normalize_host(host)
-        hub = ImmichRandomHub(host=url, api_key=api_key, verify_ssl=verify_ssl)
+        hub = ImmichRandomHub(
+            host=url, api_key=api_key, verify_ssl=verify_ssl, hass=self.hass
+        )
         return await hub.list_all_albums()

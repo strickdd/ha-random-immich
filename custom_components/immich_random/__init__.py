@@ -33,6 +33,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         verify_ssl=entry.options.get(
             "verify_ssl", entry.data.get("verify_ssl", True)
         ),
+        hass=hass,
     )
 
     if not await hub.authenticate():

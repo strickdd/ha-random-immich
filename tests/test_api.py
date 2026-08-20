@@ -13,6 +13,7 @@ _ha_stubs = [
     "homeassistant.core",
     "homeassistant.exceptions",
     "homeassistant.helpers",
+    "homeassistant.helpers.aiohttp_client",
     "homeassistant.helpers.config_validation",
     "homeassistant.helpers.entity_platform",
     "homeassistant.helpers.selector",
@@ -66,7 +67,7 @@ async def test_authenticate_success():
     mock_session.__aexit__ = AsyncMock(return_value=None)
     mock_session.post = MagicMock(return_value=mock_resp)
 
-    with patch.object(ImmichRandomHub, "_session", return_value=mock_session):
+    with patch.object(ImmichRandomHub, "_get_session", return_value=mock_session):
         result = await hub.authenticate()
     assert result is True
 
@@ -84,7 +85,7 @@ async def test_authenticate_invalid_auth():
     mock_session.__aexit__ = AsyncMock(return_value=None)
     mock_session.post = MagicMock(return_value=mock_resp)
 
-    with patch.object(ImmichRandomHub, "_session", return_value=mock_session):
+    with patch.object(ImmichRandomHub, "_get_session", return_value=mock_session):
         result = await hub.authenticate()
     assert result is False
 
@@ -102,7 +103,7 @@ async def test_authenticate_auth_status_false():
     mock_session.__aexit__ = AsyncMock(return_value=None)
     mock_session.post = MagicMock(return_value=mock_resp)
 
-    with patch.object(ImmichRandomHub, "_session", return_value=mock_session):
+    with patch.object(ImmichRandomHub, "_get_session", return_value=mock_session):
         result = await hub.authenticate()
     assert result is False
 
@@ -133,7 +134,7 @@ async def test_get_random_image_no_albums():
     mock_session.__aexit__ = AsyncMock(return_value=None)
     mock_session.post = FakePost
 
-    with patch.object(ImmichRandomHub, "_session", return_value=mock_session):
+    with patch.object(ImmichRandomHub, "_get_session", return_value=mock_session):
         result = await hub.get_random_image()
 
     assert result is not None
@@ -169,7 +170,7 @@ async def test_get_random_image_with_albums():
     mock_session.__aexit__ = AsyncMock(return_value=None)
     mock_session.post = FakePost
 
-    with patch.object(ImmichRandomHub, "_session", return_value=mock_session):
+    with patch.object(ImmichRandomHub, "_get_session", return_value=mock_session):
         result = await hub.get_random_image()
 
     assert result is not None
@@ -191,7 +192,7 @@ async def test_get_random_image_empty_results():
     mock_session.__aexit__ = AsyncMock(return_value=None)
     mock_session.post = MagicMock(return_value=mock_resp)
 
-    with patch.object(ImmichRandomHub, "_session", return_value=mock_session):
+    with patch.object(ImmichRandomHub, "_get_session", return_value=mock_session):
         result = await hub.get_random_image()
 
     assert result is None
@@ -210,7 +211,7 @@ async def test_get_random_image_api_error():
     mock_session.__aexit__ = AsyncMock(return_value=None)
     mock_session.post = MagicMock(return_value=mock_resp)
 
-    with patch.object(ImmichRandomHub, "_session", return_value=mock_session):
+    with patch.object(ImmichRandomHub, "_get_session", return_value=mock_session):
         result = await hub.get_random_image()
 
     assert result is None
@@ -233,7 +234,7 @@ async def test_download_asset_success():
     mock_session.__aexit__ = AsyncMock(return_value=None)
     mock_session.get = MagicMock(return_value=mock_resp)
 
-    with patch.object(ImmichRandomHub, "_session", return_value=mock_session):
+    with patch.object(ImmichRandomHub, "_get_session", return_value=mock_session):
         result = await hub.download_asset("asset-1")
 
     assert result == b"image-bytes"
@@ -252,7 +253,7 @@ async def test_download_asset_not_found():
     mock_session.__aexit__ = AsyncMock(return_value=None)
     mock_session.get = MagicMock(return_value=mock_resp)
 
-    with patch.object(ImmichRandomHub, "_session", return_value=mock_session):
+    with patch.object(ImmichRandomHub, "_get_session", return_value=mock_session):
         result = await hub.download_asset("missing-asset")
 
     assert result is None
@@ -271,6 +272,6 @@ async def test_authenticate_connection_error():
     mock_session.__aexit__ = AsyncMock(return_value=None)
     mock_session.post = MagicMock(side_effect=aiohttp.ClientError("Connection refused"))
 
-    with patch.object(ImmichRandomHub, "_session", return_value=mock_session):
+    with patch.object(ImmichRandomHub, "_get_session", return_value=mock_session):
         with pytest.raises(CannotConnect):
             await hub.authenticate()
