@@ -1,15 +1,25 @@
 """The Immich Random Image integration."""
 from __future__ import annotations
 
+import logging
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_KEY, CONF_HOST, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, SERVICE_REFRESH
+from .coordinator import ImmichCoordinator
 from .hub import ImmichRandomHub
 
-PLATFORMS: list[Platform] = [Platform.IMAGE]
+_LOGGER = logging.getLogger(__name__)
+
+PLATFORMS: list[Platform] = [
+    Platform.IMAGE,
+    Platform.SENSOR,
+    Platform.BUTTON,
+    Platform.SELECT,
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -28,18 +38,38 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not await hub.authenticate():
         raise HomeAssistantError("Failed to authenticate with Immich")
 
-    # Store scan interval for the image platform to use
     scan_interval = entry.options.get(
         "scan_interval",
         entry.data.get("scan_interval", DEFAULT_SCAN_INTERVAL),
     )
 
+    coordinator = ImmichCoordinator(hass, hub, entry)
+    coordinator._scan_interval_seconds = int(scan_interval)
+
+    # Fetch albums for the select entity
+    await coordinator.async_refresh_albums()
+
     hass.data[DOMAIN][entry.entry_id] = {
         "hub": hub,
+        "coordinator": coordinator,
         "scan_interval": int(scan_interval),
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Register the refresh service
+    async def _handle_refresh(call) -> None:
+        """Handle the manual refresh service call."""
+        target_entry_id = call.data.get("entry_id")
+        for eid, entry_data in hass.data.get(DOMAIN, {}).items():
+            if target_entry_id and eid != target_entry_id:
+                continue
+            coord: ImmichCoordinator = entry_data["coordinator"]
+            _LOGGER.info("Manual refresh triggered for entry %s", eid)
+            coord.force_refresh()
+            await coord.async_request_refresh()
+
+    hass.services.async_register(DOMAIN, SERVICE_REFRESH, _handle_refresh)
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 

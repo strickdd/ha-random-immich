@@ -14,8 +14,84 @@ I got tired of old add-ons that would break when Immich updated their APIs, so I
 - **SSL toggle** — disable SSL verification for self-hosted instances without valid certificates
 - **URL normalization** — handles `localhost`, `127.0.0.1`, private IPs, bare hostnames, and full domain names
 - **Configurable refresh interval** — new image every 5 minutes by default; adjustable from 1 second to 24 hours (60-300 seconds recommended)
-- **Metadata attributes** — filename, dimensions, and capture date exposed as state attributes
 - **No external dependencies** — uses only `aiohttp` (bundled with Home Assistant)
+
+## Entities
+
+The integration creates the following entities:
+
+| Entity | Type | Purpose |
+|---|---|---|
+| `image.immich_random_image` | Image | Displays the current random image |
+| `sensor.immich_last_image_pulled` | Sensor | Timestamp of when the last image was fetched |
+| `sensor.immich_image_filename` | Sensor | Filename of the current image (with dimensions and date as attributes) |
+| `button.immich_refresh_image` | Button | Triggers a manual refresh — fetches a new random image immediately |
+| `select.immich_album_selection` | Select | Dynamically change album selection from automations |
+
+## Services
+
+### `immich_random.refresh`
+
+Manually trigger a new random image fetch. Optionally target a specific config entry.
+
+```yaml
+# Refresh all Immich Random Image entries
+action: immich_random.refresh
+
+# Refresh a specific entry
+action: immich_random.refresh
+data:
+  entry_id: "01M0E6XHB0J5E8M80BGZ3ZFYSF"
+```
+
+## Automation Examples
+
+### Change album based on time of day
+
+```yaml
+alias: "Rotate album by time of day"
+trigger:
+  - platform: time
+    at: "07:00:00"
+    id: morning
+  - platform: time
+    at: "19:00:00"
+    id: evening
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: morning
+        sequence:
+          - action: select.select_option
+            target:
+              entity_id: select.immich_album_selection
+            data:
+              option: "67e7960d-4dae-45e0-85d8-9ee70441910f"  # Hass Dashboard album
+      - conditions:
+          - condition: trigger
+            id: evening
+        sequence:
+          - action: select.select_option
+            target:
+              entity_id: select.immich_album_selection
+            data:
+              option: "all"  # Random from entire library
+```
+
+### Refresh image on motion
+
+```yaml
+alias: "Refresh image when motion detected"
+trigger:
+  - platform: state
+    entity_id: binary_sensor.living_room_motion
+    to: "on"
+action:
+  - action: button.press
+    target:
+      entity_id: button.immich_refresh_image
+```
 
 ## Installation
 

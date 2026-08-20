@@ -16,6 +16,7 @@ _ha_stubs = [
     "homeassistant.helpers.config_validation",
     "homeassistant.helpers.entity_platform",
     "homeassistant.helpers.selector",
+    "homeassistant.helpers.update_coordinator",
     "homeassistant.components",
     "homeassistant.components.image",
     "homeassistant.data_entry_flow",
