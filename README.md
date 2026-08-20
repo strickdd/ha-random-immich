@@ -1,8 +1,8 @@
 # Immich Random Image for Home Assistant
 
-![GitHub Release](https://img.shields.io/github/v/release/strickdd/ha-random-immich)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/strickdd/ha-random-immich/validate.yml)
-![License](https://img.shields.io/github/license/strickdd/ha-random-immich)
+![GitHub Release](https://img.shields.io/github/v/release/strickdd/ha-random-immich?label=release)
+![CI Status](https://img.shields.io/github/actions/workflow/status/strickdd/ha-random-immich/validate.yml?label=CI)
+![License](https://img.shields.io/github/license/strickdd/ha-random-immich?label=license)
 
 I got tired of old add-ons that would break when Immich updated their APIs, so I created a custom integration for Home Assistant that displays random images from your Immich instance on your dashboards. Built for Immich v3+ using the current `/api/search/random` endpoint.
 
