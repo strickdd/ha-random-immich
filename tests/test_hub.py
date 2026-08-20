@@ -10,19 +10,21 @@ from unittest.mock import MagicMock
 
 def _setup_ha_stubs():
     """Create minimal homeassistant stubs for testing without HA installed."""
-    ha_stubs = [
+    _ha_stubs = [
         "homeassistant",
         "homeassistant.config_entries",
         "homeassistant.const",
         "homeassistant.core",
         "homeassistant.exceptions",
         "homeassistant.helpers",
+        "homeassistant.helpers.config_validation",
         "homeassistant.helpers.entity_platform",
+        "homeassistant.helpers.selector",
         "homeassistant.components",
         "homeassistant.components.image",
         "homeassistant.data_entry_flow",
     ]
-    for name in ha_stubs:
+    for name in _ha_stubs:
         if name not in sys.modules:
             sys.modules[name] = MagicMock()
 

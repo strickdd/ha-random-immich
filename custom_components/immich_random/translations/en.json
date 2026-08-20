@@ -24,7 +24,7 @@
     "step": {
       "init": {
         "title": "Immich Random Image Settings",
-        "description": "Update your Immich connection settings and select which albums to pull random images from. Leave all albums unchecked for a fully random image from your entire library. A new image is pulled immediately when albums change.",
+        "description": "Update your Immich connection settings and select which albums to pull random images from. Leave the API key field empty to keep your current key. Leave all albums unchecked for a fully random image from your entire library. A new image is pulled immediately when albums change.",
         "data": {
           "host": "Server URL",
           "api_key": "API Key",
