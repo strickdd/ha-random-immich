@@ -6,6 +6,18 @@
 
 I got tired of old Home Assistant add-ons that would break when Immich updated their APIs, so I created a custom integration for Home Assistant that displays random images from your Immich instance on your dashboards. Built for Immich v3+ using the current `/api/search/random` endpoint.
 
+> **Looking for the original integration?** The previous [immich-home-assistant](https://github.com/outadoc/immich-home-assistant) integration by [@outadoc](https://github.com/outadoc) broke when Immich changed their API in v3. This is a fresh, from-scratch implementation using the current `/api/search/random` endpoint — not a fork or patch.
+
+## Screenshots
+
+| Configuration | Entities |
+|---|---|
+| ![Configuration options](screenshots/configuration-options.png) | ![Entities](screenshots/entities.png) |
+
+| Album Selection | Refresh on Demand |
+|---|---|
+| ![Album selection](screenshots/album-selection.png) | ![Refresh button](screenshots/refresh-button.png) |
+
 ## Features
 
 - **Fully random image** from your entire Immich library
