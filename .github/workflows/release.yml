@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pytest pytest-asyncio aiohttp voluptuous
+
+      - name: Lint
+        run: ruff check custom_components/ tests/
+
+      - name: Test
+        run: PYTHONPATH=. python -m pytest tests/ -v
+
+      - name: Validate manifest
+        run: |
+          python -c "
+          import json
+          with open('custom_components/immich_random/manifest.json') as f:
+              m = json.load(f)
+          assert m['domain'] == 'immich_random', 'domain mismatch'
+          assert m['config_flow'] is True, 'config_flow must be true'
+          assert m['version'], 'version required'
+          print('Manifest OK — version', m['version'])
+          "
+
+  release:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create release zip
+        run: |
+          cd custom_components
+          zip -r immich_random.zip immich_random/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: v${{ steps.version.outputs.VERSION }}
+          generate_release_notes: true
+          files: custom_components/immich_random.zip

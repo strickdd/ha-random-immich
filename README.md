@@ -104,10 +104,6 @@ Install via [HACS](https://hacs.xyz) (Home Assistant Community Store).
 3. Install "Immich Random Image" from HACS
 4. Restart Home Assistant
 
-### Manual installation
-
-Copy the entire `custom_components/immich_random/` directory into your Home Assistant `custom_components/` directory, then restart Home Assistant.
-
 ## Immich API Key Setup
 
 To use this integration, you need a long-lived API key from Immich:
