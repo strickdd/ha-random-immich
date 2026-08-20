@@ -69,10 +69,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    def __init__(self) -> None:
+        """Initialize the config flow."""
+        self._credentials: dict[str, Any] = {}
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle the initial step: host, API key, SSL toggle."""
+        """Step 1: enter host, API key, and SSL toggle."""
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
@@ -85,9 +89,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
-                return self.async_create_entry(
-                    title=result["title"], data=result["data"]
-                )
+                # Store validated credentials for the album step
+                self._credentials = result["data"]
+                return await self.async_step_album()
 
         return self.async_show_form(
             step_id="user",
@@ -101,6 +105,63 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
+        )
+
+    async def async_step_album(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 2: select which albums to pull random images from.
+
+        Fetches the album list from Immich using the validated credentials
+        from step 1. The user can select zero, one, or multiple albums.
+        Leave all unchecked for a fully random image from the entire library.
+        """
+        if user_input is not None:
+            data = dict(self._credentials)
+            data[CONF_ALBUM_IDS] = user_input.get(CONF_ALBUM_IDS, [])
+            hostname = urlparse(self._credentials[CONF_HOST]).hostname
+            return self.async_create_entry(
+                title=f"Immich @ {hostname}", data=data
+            )
+
+        # Fetch albums using the validated credentials
+        hub = ImmichRandomHub(
+            host=self._credentials[CONF_HOST],
+            api_key=self._credentials[CONF_API_KEY],
+            verify_ssl=self._credentials.get(CONF_VERIFY_SSL, True),
+        )
+        try:
+            albums = await hub.list_all_albums()
+        except Exception:
+            _LOGGER.warning("Failed to fetch albums during setup, skipping album step")
+            # Skip album selection and create the entry directly
+            data = dict(self._credentials)
+            data[CONF_ALBUM_IDS] = []
+            hostname = urlparse(self._credentials[CONF_HOST]).hostname
+            return self.async_create_entry(
+                title=f"Immich @ {hostname}", data=data
+            )
+
+        album_map = {album["id"]: album["albumName"] for album in albums}
+
+        if not album_map:
+            # No albums available — skip this step
+            data = dict(self._credentials)
+            data[CONF_ALBUM_IDS] = []
+            hostname = urlparse(self._credentials[CONF_HOST]).hostname
+            return self.async_create_entry(
+                title=f"Immich @ {hostname}", data=data
+            )
+
+        return self.async_show_form(
+            step_id="album",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_ALBUM_IDS, default=[]): cv.multi_select(
+                        album_map
+                    ),
+                }
+            ),
         )
 
     @staticmethod

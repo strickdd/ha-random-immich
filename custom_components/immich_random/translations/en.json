@@ -9,6 +9,13 @@
           "api_key": "API Key",
           "verify_ssl": "Verify SSL certificate"
         }
+      },
+      "album": {
+        "title": "Select Albums",
+        "description": "Choose which albums to pull random images from. Leave all unchecked for a fully random image from your entire library. You can change this later in the integration settings.",
+        "data": {
+          "album_ids": "Albums"
+        }
       }
     },
     "error": {
